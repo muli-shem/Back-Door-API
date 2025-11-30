@@ -11,9 +11,10 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
-    is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(auto_now_add=True)
     profile_image = models.ImageField(upload_to='profiles/', null=True, blank=True)
+    
+    # Remove is_active - already in AbstractUser
+    # Remove date_joined - already in AbstractUser
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['full_name', 'username']

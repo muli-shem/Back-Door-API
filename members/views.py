@@ -450,7 +450,7 @@ def send_password_set_confirmation(user):
     """
     Send confirmation email after password is set.
     """
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
     login_link = f"{frontend_url}/login"
     
     subject = 'Your G-NET Account is Ready!'

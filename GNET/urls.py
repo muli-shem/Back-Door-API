@@ -26,7 +26,7 @@ urlpatterns = [
     path('api/members/', include('members.urls')),
 
     # Projects app (if you have one)
-    path('api/projects', include('projects.urls')),
+    path('api/projects/', include('projects.urls')),
 
     # Finance app (if you have one)
     path('api/finance/', include('finance.urls')),
