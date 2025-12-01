@@ -249,7 +249,7 @@ def request_password_reset(request):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
         # Send reset email
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
         reset_link = f"{frontend_url}/reset-password/{uid}/{token}"
         
         subject = 'Password Reset - G-NET'
@@ -276,7 +276,7 @@ The G-NET Team
                     <p>Hi {user.full_name},</p>
                     <p>You requested to reset your password. Click the button below to set a new password:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="{reset_link}" 
+                        <a href={reset_link} 
                            style="background-color: #2563eb; 
                                   color: white; 
                                   padding: 12px 24px; 
@@ -383,7 +383,7 @@ def send_welcome_email(user, temp_password):
     """
     Send welcome email to new member with password setup instructions.
     """
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
     # Updated to point to set-password page instead of reset-password
     reset_link = f"{frontend_url}/set-password?email={user.email}"
     
@@ -412,7 +412,7 @@ The G-NET Team
                 <p>Welcome to <strong>G-NET</strong> - Generation Network of Entrepreneurs and Transformers!</p>
                 <p>Your account has been created successfully. To get started, please set your password using the button below:</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="{reset_link}" 
+                    <a href={reset_link} 
                        style="background-color: #2563eb; 
                               color: white; 
                               padding: 12px 24px; 
@@ -478,7 +478,7 @@ The G-NET Team
                 <p>Great news! Your password has been set successfully.</p>
                 <p>You can now log in to your <strong>G-NET</strong> account using your email and the password you just created.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="{login_link}" 
+                    <a href={login_link} 
                        style="background-color: #2563eb; 
                               color: white; 
                               padding: 12px 24px; 

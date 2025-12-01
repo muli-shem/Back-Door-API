@@ -70,6 +70,10 @@ def login_view(request):
         # The cookie is HTTP-only (JavaScript can't access it - secure!)
         login(request, user)
         
+        # Debug logging
+        print(f"Login successful - Session created")
+        print(f"User: {user.email}, Session key: {request.session.session_key}")
+        
         # Return user data (NO TOKENS NEEDED!)
         return Response({
             'user': CustomUserSerializer(user).data,
@@ -198,7 +202,7 @@ def profile(request):
     if request.method == 'GET':
         # Return current user's data
         serializer = CustomUserSerializer(request.user)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     elif request.method == 'PUT':
         # Update current user's data
@@ -210,7 +214,7 @@ def profile(request):
         
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -237,7 +241,7 @@ def get_csrf_token(request):
         "detail": "CSRF cookie set"
     }
     """
-    return Response({'detail': 'CSRF cookie set'})
+    return Response({'detail': 'CSRF cookie set'}, status=status.HTTP_200_OK)
 
 
 # ============================================================================
@@ -277,6 +281,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         
         # Non-admins only see members
         return CustomUser.objects.filter(role='member')
+    
+    def list(self, request, *args, **kwargs):
+        """Override to always return 200 even with empty queryset"""
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # ============================================================================

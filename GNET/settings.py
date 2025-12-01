@@ -96,7 +96,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'mulishem2002@gmail.com'
 EMAIL_HOST_PASSWORD = 'xhzisxxodysphumy'  # No spaces
 DEFAULT_FROM_EMAIL = 'mulishem2002@gmail.com'
-FRONTEND_URL = 'http://localhost:3000'
+FRONTEND_URL = 'http://localhost:5173'
 
 # User model
 AUTH_USER_MODEL = 'accounts.CustomUser'

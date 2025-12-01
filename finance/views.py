@@ -15,6 +15,12 @@ class MMFTopUpViewSet(viewsets.ModelViewSet):
             return MMFTopUp.objects.all()
         return MMFTopUp.objects.filter(user=self.request.user)
     
+    def list(self, request, *args, **kwargs):
+        """Override to always return 200 even with empty queryset"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=200)
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
@@ -27,6 +33,12 @@ class WithdrawalRequestViewSet(viewsets.ModelViewSet):
             return WithdrawalRequest.objects.all()
         return WithdrawalRequest.objects.filter(user=self.request.user)
     
+    def list(self, request, *args, **kwargs):
+        """Override to always return 200 even with empty queryset"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=200)
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
@@ -34,10 +46,17 @@ class AuditRecordViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditRecord.objects.all()
     serializer_class = AuditRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        """Override to always return 200 even with empty queryset"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=200)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def finance_summary(request):
+    """Returns finance summary - always returns 200 even with no data"""
     user = request.user
     today = timezone.now().date()
     
@@ -63,15 +82,16 @@ def finance_summary(request):
         'this_month_total': this_month_total,
         'pending_withdrawal': pending_withdrawal,
         'approved_withdrawal': approved_withdrawal,
-    })
+    }, status=200)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def member_rankings(request):
+    """Returns member rankings - always returns 200 even with no data"""
     rankings = MMFTopUp.objects.filter(
         status='Success'
     ).values('user__full_name', 'user__id').annotate(
         total=Sum('amount')
     ).order_by('-total')[:20]
     
-    return Response(rankings)
+    return Response(list(rankings), status=200)
