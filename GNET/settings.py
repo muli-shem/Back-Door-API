@@ -96,7 +96,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'mulishem2002@gmail.com'
 EMAIL_HOST_PASSWORD = 'xhzisxxodysphumy'  # No spaces
 DEFAULT_FROM_EMAIL = 'mulishem2002@gmail.com'
-FRONTEND_URL = 'http://localhost:5173'
+FRONTEND_URL = 'https://genentreprenuersnetwork.netlify.app'
 
 # User model
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -167,6 +167,7 @@ CORS_ALLOW_ALL_ORIGINS = False  # ✅ Changed from True for better security
 # Explicitly allow your frontend origin
 # This tells Django which domains can make authenticated requests to your API
 CORS_ALLOWED_ORIGINS = [
+    "https://genentreprenuersnetwork.netlify.app",      # Production frontend
     "http://localhost:5173",      # Vite default dev server
     "http://127.0.0.1:5173",      # Alternative localhost
     "http://localhost:3000",      # React/Next.js default
@@ -264,6 +265,7 @@ CSRF_COOKIE_DOMAIN = None
 # Which origins are trusted for CSRF-protected requests
 # This must match your CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
+    "https://genentreprenuersnetwork.netlify.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
@@ -288,12 +290,12 @@ if not DEBUG:
     
     # Stricter CORS - only allow your production domain
     CORS_ALLOWED_ORIGINS = [
-        "https://yourdomain.com",
+        "https://genentreprenuersnetwork.netlify.app",
     ]
     
     # Add your production domain to trusted origins
     CSRF_TRUSTED_ORIGINS = [
-        "https://yourdomain.com",
+        "https://genentreprenuersnetwork.netlify.app",
     ]
     
     # Enable security headers
@@ -317,3 +319,51 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Generational Entrepreneurs Network API',
     'VERSION': '1.0.0',
 }
+
+# ============================================================================
+# RENDER DEPLOYMENT CONFIGURATION
+# ============================================================================
+
+# Handle Render-specific settings (only activated when deployed on Render)
+if os.environ.get('RENDER'):
+    # Force DEBUG to False in production
+    DEBUG = False
+    
+    # Get Render's external hostname
+    RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+    if RENDER_EXTERNAL_HOSTNAME:
+        # Add Render URL to allowed hosts
+        if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+        
+        # Ensure frontend URL is in allowed hosts
+        if 'genentreprenuersnetwork.netlify.app' not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append('genentreprenuersnetwork.netlify.app')
+        
+        # Update CORS to include Render backend URL
+        CORS_ALLOWED_ORIGINS = [
+            f"https://{RENDER_EXTERNAL_HOSTNAME}",
+            "https://genentreprenuersnetwork.netlify.app",
+        ]
+        
+        # Update CSRF trusted origins
+        CSRF_TRUSTED_ORIGINS = [
+            f"https://{RENDER_EXTERNAL_HOSTNAME}",
+            "https://genentreprenuersnetwork.netlify.app",
+        ]
+        
+        # Production security settings (HTTPS-only)
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+        SECURE_SSL_REDIRECT = True
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+        SECURE_HSTS_SECONDS = 31536000
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+        SECURE_BROWSER_XSS_FILTER = True
+        SECURE_CONTENT_TYPE_NOSNIFF = True
+        
+        # SameSite None for cross-origin cookies with HTTPS
+        # This is required because frontend and backend are on different domains
+        SESSION_COOKIE_SAMESITE = 'None'
+        CSRF_COOKIE_SAMESITE = 'None'
