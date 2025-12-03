@@ -10,6 +10,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt  # ← ADDED
 from members.models import MemberProfile
 from members.serializers import MemberProfileSerializer
 
@@ -55,6 +56,7 @@ def member_directory(request):
     return Response(serializer.data)
 
 
+@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def member_registration(request):
@@ -138,6 +140,7 @@ def member_registration(request):
         )
 
 
+@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def activate_account(request):
@@ -173,6 +176,7 @@ def activate_account(request):
 
 # ==================== NEW PASSWORD MANAGEMENT VIEWS ====================
 
+@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def set_password(request):
@@ -227,6 +231,7 @@ def set_password(request):
         )
 
 
+@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def request_password_reset(request):
@@ -325,6 +330,7 @@ The G-NET Team
         )
 
 
+@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def reset_password_confirm(request):
