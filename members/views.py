@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
@@ -10,7 +10,6 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt  # ← ADDED
 from members.models import MemberProfile
 from members.serializers import MemberProfileSerializer
 
@@ -56,9 +55,9 @@ def member_directory(request):
     return Response(serializer.data)
 
 
-@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@authentication_classes([])  # ← FIXED: Disable all authentication (including CSRF)
 def member_registration(request):
     """
     Handle member registration from the join form.
@@ -140,9 +139,9 @@ def member_registration(request):
         )
 
 
-@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@authentication_classes([])  # ← FIXED
 def activate_account(request):
     """
     Optional: Activate user account after email verification.
@@ -176,9 +175,9 @@ def activate_account(request):
 
 # ==================== NEW PASSWORD MANAGEMENT VIEWS ====================
 
-@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@authentication_classes([])  # ← FIXED
 def set_password(request):
     """
     Allow new users to set their password for the first time.
@@ -231,9 +230,9 @@ def set_password(request):
         )
 
 
-@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@authentication_classes([])  # ← FIXED
 def request_password_reset(request):
     """
     Generate and send password reset token to user's email.
@@ -330,9 +329,9 @@ The G-NET Team
         )
 
 
-@csrf_exempt  # ← ADDED
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@authentication_classes([])  # ← FIXED
 def reset_password_confirm(request):
     """
     Validate token and set new password.
