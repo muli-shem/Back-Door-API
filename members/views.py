@@ -249,7 +249,7 @@ def request_password_reset(request):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
         # Send reset email
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genetbackdoor.onrender.com')
         reset_link = f"{frontend_url}/reset-password/{uid}/{token}"
         
         subject = 'Password Reset - G-NET'
@@ -383,7 +383,7 @@ def send_welcome_email(user, temp_password):
     """
     Send welcome email to new member with password setup instructions.
     """
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genetbackdoor.onrender.com')
     # Updated to point to set-password page instead of reset-password
     reset_link = f"{frontend_url}/set-password?email={user.email}"
     
@@ -450,7 +450,7 @@ def send_password_set_confirmation(user):
     """
     Send confirmation email after password is set.
     """
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genetbackdoor.onrender.com')
     login_link = f"{frontend_url}/login"
     
     subject = 'Your G-NET Account is Ready!'

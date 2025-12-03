@@ -4,6 +4,7 @@ from accounts.serializers import CustomUserSerializer
 
 class MMFTopUpSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer(read_only=True)
+    amount = serializers.FloatField()  # ✅ Convert Decimal to Float
     
     class Meta:
         model = MMFTopUp
@@ -13,6 +14,7 @@ class MMFTopUpSerializer(serializers.ModelSerializer):
 class WithdrawalRequestSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer(read_only=True)
     approved_by = CustomUserSerializer(read_only=True)
+    amount = serializers.FloatField()  # ✅ Convert Decimal to Float
     
     class Meta:
         model = WithdrawalRequest
@@ -21,6 +23,8 @@ class WithdrawalRequestSerializer(serializers.ModelSerializer):
 
 class AuditRecordSerializer(serializers.ModelSerializer):
     auditor = CustomUserSerializer(read_only=True)
+    total_topups = serializers.FloatField()  # ✅ Convert Decimal to Float
+    total_withdrawals = serializers.FloatField()  # ✅ Convert Decimal to Float
     
     class Meta:
         model = AuditRecord
