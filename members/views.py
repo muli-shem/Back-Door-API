@@ -16,6 +16,34 @@ from members.serializers import MemberProfileSerializer
 User = get_user_model()
 
 
+# ==================== HELPER FUNCTION FOR SENDGRID ====================
+
+def send_email_sendgrid(subject, html_message, recipient_email):
+    """
+    Send email using SendGrid Web API.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        sg = SendGridAPIClient(getattr(settings, 'SENDGRID_API_KEY', ''))
+        message = Mail(
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'gnetentrepreneurs@gmail.com'),
+            to_emails=recipient_email,
+            subject=subject,
+            html_content=html_message
+        )
+        response = sg.send(message)
+        print(f"✅ SendGrid email sent to {recipient_email}, Status: {response.status_code}")
+        return True
+    except Exception as e:
+        print(f"⚠️ SendGrid failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 # ==================== EXISTING VIEWSETS ====================
 
 class MemberProfileViewSet(viewsets.ModelViewSet):
@@ -57,7 +85,7 @@ def member_directory(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-@authentication_classes([])  # ← FIXED: Disable all authentication (including CSRF)
+@authentication_classes([])
 def member_registration(request):
     """
     Handle member registration from the join form.
@@ -94,11 +122,11 @@ def member_registration(request):
             # Create the user
             user = User.objects.create_user(
                 email=data['email'],
-                username=data['email'],  # Use email as username
+                username=data['email'],
                 full_name=full_name,
                 password=temp_password,
-                role='member',  # Default role for new registrations
-                is_active=True  # Set to True for immediate access, False if email verification needed
+                role='member',
+                is_active=True
             )
             
             # Create the member profile
@@ -108,19 +136,18 @@ def member_registration(request):
                 county=data['county'],
                 profession=data['profession'],
                 skills=data.get('skills', ''),
-                bio=data.get('motivation', ''),  # Map motivation to bio
-                portfolio_url=data.get('portfolioUrl', '')  # Optional field
+                bio=data.get('motivation', ''),
+                portfolio_url=data.get('portfolioUrl', '')
             )
             
-            # Send welcome email with password reset link
+            # Send welcome email
             email_sent = False
             try:
                 send_welcome_email(user, temp_password)
                 email_sent = True
-                print(f"Welcome email sent to {user.email}")
+                print(f"✅ Welcome email sent to {user.email}")
             except Exception as email_error:
-                # Log the error but don't fail the registration
-                print(f"Failed to send welcome email: {email_error}")
+                print(f"⚠️ Failed to send welcome email: {email_error}")
                 import traceback
                 traceback.print_exc()
             
@@ -133,12 +160,15 @@ def member_registration(request):
                         'full_name': user.full_name,
                         'role': user.role
                     },
-                    'email_send':email_sent
+                    'email_sent': email_sent
                 },
                 status=status.HTTP_201_CREATED
             )
     
     except Exception as e:
+        print(f"❌ Registration error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return Response(
             {'detail': f'Registration failed: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -147,7 +177,7 @@ def member_registration(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-@authentication_classes([])  # ← FIXED
+@authentication_classes([])
 def activate_account(request):
     """
     Optional: Activate user account after email verification.
@@ -163,8 +193,6 @@ def activate_account(request):
     
     try:
         user = User.objects.get(email=email)
-        # Add your token verification logic here
-        # For now, just activate the account
         user.is_active = True
         user.save()
         
@@ -179,15 +207,14 @@ def activate_account(request):
         )
 
 
-# ==================== NEW PASSWORD MANAGEMENT VIEWS ====================
+# ==================== PASSWORD MANAGEMENT VIEWS ====================
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-@authentication_classes([])  # ← FIXED
+@authentication_classes([])
 def set_password(request):
     """
     Allow new users to set their password for the first time.
-    This is for users who received a welcome email after registration.
     """
     email = request.data.get('email')
     password = request.data.get('password')
@@ -198,7 +225,6 @@ def set_password(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Validate password strength
     if len(password) < 8:
         return Response(
             {'detail': 'Password must be at least 8 characters long'},
@@ -207,17 +233,15 @@ def set_password(request):
     
     try:
         user = User.objects.get(email=email)
-        
-        # Set the new password
         user.set_password(password)
-        user.is_active = True  # Ensure account is active
+        user.is_active = True
         user.save()
         
         # Send confirmation email
         try:
             send_password_set_confirmation(user)
         except Exception as email_error:
-            print(f"Failed to send confirmation email: {email_error}")
+            print(f"⚠️ Failed to send confirmation email: {email_error}")
         
         return Response(
             {'detail': 'Password set successfully. You can now log in.'},
@@ -230,6 +254,7 @@ def set_password(request):
             status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        print(f"❌ Set password error: {str(e)}")
         return Response(
             {'detail': f'Failed to set password: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -238,7 +263,7 @@ def set_password(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-@authentication_classes([])  # ← FIXED
+@authentication_classes([])
 def request_password_reset(request):
     """
     Generate and send password reset token to user's email.
@@ -258,25 +283,11 @@ def request_password_reset(request):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
-        # Send reset email
-        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genetbackdoor.onrender.com')
+        # Build reset link
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genentreprenuersnetwork.netlify.app')
         reset_link = f"{frontend_url}/reset-password/{uid}/{token}"
         
         subject = 'Password Reset - G-NET'
-        message = f"""
-Hi {user.full_name},
-
-You requested to reset your password. Click the link below to set a new password:
-
-{reset_link}
-
-This link will expire in 24 hours.
-
-If you didn't request this, please ignore this email.
-
-Best regards,
-The G-NET Team
-        """
         
         html_message = f"""
         <html>
@@ -286,7 +297,7 @@ The G-NET Team
                     <p>Hi {user.full_name},</p>
                     <p>You requested to reset your password. Click the button below to set a new password:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href={reset_link} 
+                        <a href="{reset_link}" 
                            style="background-color: #2563eb; 
                                   color: white; 
                                   padding: 12px 24px; 
@@ -308,19 +319,19 @@ The G-NET Team
         </html>
         """
         
-        send_mail(
-            subject=subject,
-            message=message,
-            html_message=html_message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@gnet.org'),
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-        print(f"Password reset email sent to {user.email}")
-        return Response(
-            {'detail': 'Password reset email sent. Please check your inbox.'},
-            status=status.HTTP_200_OK
-        )
+        # Send email using SendGrid Web API
+        email_sent = send_email_sendgrid(subject, html_message, user.email)
+        
+        if email_sent:
+            return Response(
+                {'detail': 'Password reset email sent. Please check your inbox.'},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {'detail': 'Failed to send reset email. Please try again later.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
     except User.DoesNotExist:
         # Return success even if user doesn't exist (security best practice)
@@ -329,6 +340,9 @@ The G-NET Team
             status=status.HTTP_200_OK
         )
     except Exception as e:
+        print(f"❌ Password reset error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return Response(
             {'detail': 'Failed to send reset email. Please try again later.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -337,7 +351,7 @@ The G-NET Team
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-@authentication_classes([])  # ← FIXED
+@authentication_classes([])
 def reset_password_confirm(request):
     """
     Validate token and set new password.
@@ -352,7 +366,6 @@ def reset_password_confirm(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Validate password strength
     if len(new_password) < 8:
         return Response(
             {'detail': 'Password must be at least 8 characters long'},
@@ -373,7 +386,7 @@ def reset_password_confirm(request):
         
         # Set new password
         user.set_password(new_password)
-        user.is_active = True  # Ensure account is active
+        user.is_active = True
         user.save()
         
         return Response(
@@ -394,25 +407,10 @@ def send_welcome_email(user, temp_password):
     """
     Send welcome email to new member with password setup instructions.
     """
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genetbackdoor.onrender.com')
-    # Updated to point to set-password page instead of reset-password
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genentreprenuersnetwork.netlify.app')
     reset_link = f"{frontend_url}/set-password?email={user.email}"
     
     subject = 'Welcome to G-NET!'
-    message = f"""
-Hi {user.full_name},
-
-Welcome to G-NET - Generation Network of Entrepreneurs and Transformers!
-
-Your account has been created successfully. To get started, please set your password using the link below:
-
-{reset_link}
-
-If you have any questions, feel free to reach out to our team.
-
-Best regards,
-The G-NET Team
-    """
     
     html_message = f"""
     <html>
@@ -423,7 +421,7 @@ The G-NET Team
                 <p>Welcome to <strong>G-NET</strong> - Generation Network of Entrepreneurs and Transformers!</p>
                 <p>Your account has been created successfully. To get started, please set your password using the button below:</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href={reset_link} 
+                    <a href="{reset_link}" 
                        style="background-color: #2563eb; 
                               color: white; 
                               padding: 12px 24px; 
@@ -444,41 +442,20 @@ The G-NET Team
     </html>
     """
     
-    try:
-        send_mail(
-            subject=subject,
-            message=message,
-            html_message=html_message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@gnet.org'),
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-    except Exception as e:
-        raise Exception(f"Email sending failed: {str(e)}")
+    # Send using SendGrid Web API
+    success = send_email_sendgrid(subject, html_message, user.email)
+    if not success:
+        raise Exception("Failed to send welcome email via SendGrid")
 
 
 def send_password_set_confirmation(user):
     """
     Send confirmation email after password is set.
     """
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genetbackdoor.onrender.com')
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://genentreprenuersnetwork.netlify.app')
     login_link = f"{frontend_url}/login"
     
     subject = 'Your G-NET Account is Ready!'
-    message = f"""
-Hi {user.full_name},
-
-Great news! Your password has been set successfully.
-
-You can now log in to your G-NET account using your email and the password you just created.
-
-Login here: {login_link}
-
-Welcome to the G-NET community!
-
-Best regards,
-The G-NET Team
-    """
     
     html_message = f"""
     <html>
@@ -489,7 +466,7 @@ The G-NET Team
                 <p>Great news! Your password has been set successfully.</p>
                 <p>You can now log in to your <strong>G-NET</strong> account using your email and the password you just created.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href={login_link} 
+                    <a href="{login_link}" 
                        style="background-color: #2563eb; 
                               color: white; 
                               padding: 12px 24px; 
@@ -506,14 +483,7 @@ The G-NET Team
     </html>
     """
     
-    try:
-        send_mail(
-            subject=subject,
-            message=message,
-            html_message=html_message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@gnet.org'),
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-    except Exception as e:
-        raise Exception(f"Email sending failed: {str(e)}")
+    # Send using SendGrid Web API
+    success = send_email_sendgrid(subject, html_message, user.email)
+    if not success:
+        raise Exception("Failed to send confirmation email via SendGrid")

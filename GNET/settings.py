@@ -94,18 +94,20 @@ DATABASES = {
 
 USE_SENDGRID = env.bool('USE_SENDGRID', default=False)
 
+# ============================================================================
+# EMAIL CONFIGURATION - SendGrid
+# ============================================================================
+
+USE_SENDGRID = env.bool('USE_SENDGRID', default=False)
+
 if USE_SENDGRID:
-    # Production - SendGrid SMTP
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.sendgrid.net'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = 'apikey'  # This is literally "apikey" - don't change
-    EMAIL_HOST_PASSWORD = env('SENDGRID_API_KEY')
+    # Production - SendGrid Web API (not SMTP - Render blocks SMTP ports)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Temporary fallback
     DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='gnetentrepreneurs@gmail.com')
+    SENDGRID_API_KEY = env('SENDGRID_API_KEY')
     SERVER_EMAIL = DEFAULT_FROM_EMAIL
 else:
-    # Development/Testing - Console backend (prints to logs)
+    # Development/Testing - Console backend
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = 'gnetentrepreneurs@gmail.com'
 
