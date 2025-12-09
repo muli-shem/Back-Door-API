@@ -113,11 +113,16 @@ def member_registration(request):
             )
             
             # Send welcome email with password reset link
+            email_sent = False
             try:
                 send_welcome_email(user, temp_password)
+                email_sent = True
+                print(f"Welcome email sent to {user.email}")
             except Exception as email_error:
                 # Log the error but don't fail the registration
                 print(f"Failed to send welcome email: {email_error}")
+                import traceback
+                traceback.print_exc()
             
             return Response(
                 {
@@ -127,7 +132,8 @@ def member_registration(request):
                         'email': user.email,
                         'full_name': user.full_name,
                         'role': user.role
-                    }
+                    },
+                    'email_send':email_sent
                 },
                 status=status.HTTP_201_CREATED
             )
@@ -310,7 +316,7 @@ The G-NET Team
             recipient_list=[user.email],
             fail_silently=False,
         )
-        
+        print(f"Password reset email sent to {user.email}")
         return Response(
             {'detail': 'Password reset email sent. Please check your inbox.'},
             status=status.HTTP_200_OK

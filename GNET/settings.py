@@ -88,15 +88,28 @@ DATABASES = {
     )
 }
 
-# Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'mulishem2002@gmail.com'
-EMAIL_HOST_PASSWORD = 'xhzisxxodysphumy'  # No spaces
-DEFAULT_FROM_EMAIL = 'mulishem2002@gmail.com'
-FRONTEND_URL = 'https://genentreprenuersnetwork.netlify.app'
+# ============================================================================
+# EMAIL CONFIGURATION - SendGrid
+# ============================================================================
+
+USE_SENDGRID = env.bool('USE_SENDGRID', default=False)
+
+if USE_SENDGRID:
+    # Production - SendGrid SMTP
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.sendgrid.net'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'apikey'  # This is literally "apikey" - don't change
+    EMAIL_HOST_PASSWORD = env('SENDGRID_API_KEY')
+    DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='gnetentrepreneurs@gmail.com')
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+else:
+    # Development/Testing - Console backend (prints to logs)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'gnetentrepreneurs@gmail.com'
+
+FRONTEND_URL = env('FRONTEND_URL', default='https://genentreprenuersnetwork.netlify.app')
 
 # User model
 AUTH_USER_MODEL = 'accounts.CustomUser'
